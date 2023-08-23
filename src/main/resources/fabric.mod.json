@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "aicraft",
+  "version": "${version}",
+  "name": "aicraft",
+  "description": "AI makes cool content cuz im too lazy",
+  "authors": [
+    "daytrip"
+  ],
+  "contact": {
+    "website": "jcc.lol",
+    "repo": "https://github.com/jai/aicraft"
+  },
+  "license": "MIT",
+  "icon": "assets/aicraft/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.daytrip.aicraft.client.AicraftClient"
+    ],
+    "main": [
+      "com.daytrip.aicraft.Aicraft"
+    ]
+  },
+  "mixins": [
+    "aicraft.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

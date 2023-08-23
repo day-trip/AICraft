@@ -1,0 +1,9 @@
+.idea
+.grade
+build
+nativelib/*.dll
+nativelib/*.dll.exp
+nativelib/*.dll.lib
+nativelib/*.dll.pdb
+run/crash-reports
+run/logs

@@ -1,5 +1,5 @@
 .idea
-.grade
+.gradle
 build
 nativelib/*.dll
 nativelib/*.dll.exp

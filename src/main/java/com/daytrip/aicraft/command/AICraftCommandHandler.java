@@ -36,17 +36,17 @@ public class AICraftCommandHandler {
     }
 
     private static void recipe(String id) {
-        RecipeGraph graph = RecipeGraph.create(BuiltInRegistries.ITEM.get(new ResourceLocation("minecraft", id)));
+        var graph = new RecipeGraph(BuiltInRegistries.ITEM.get(new ResourceLocation("minecraft", id)));
         chatLog(graph.toString());
         chatLog(graph.getRemainingRequirements(getPlayer().getInventory()).toString());
     }
 
     private static void pathfind(BlockPos destination) { // !path 0 -60 12        !path -91 78 -254
-        DStarLite dStarLite = new DStarLite(getPlayer().clientLevel);
+        var dStarLite = new DStarLite(getPlayer().clientLevel);
         dStarLite.init(getPlayer().blockPosition(), destination);
         dStarLite.replan();
         for (State s : dStarLite.getPath()) {
-            BlockPos pos = new BlockPos(s.x, s.z, s.y);
+            var pos = new BlockPos(s.x, s.z, s.y);
             chatLog(pos.toShortString());
             getPlayer().clientLevel.setBlock(pos.below(), Blocks.DIAMOND_BLOCK.defaultBlockState(), 2);
         }

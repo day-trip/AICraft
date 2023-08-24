@@ -165,7 +165,7 @@ public class DStarLite implements java.io.Serializable {
             n.add(openList.poll()); // add best
             System.out.println(n);
 
-            // TODO: compare cell with best from priorityqueue, and add loop prevention, then add better occupied detection, find ground level, and test over large range
+            // TODO: then add better occupied detection
 
             for (State i : n) {
                 if (i == null || occupied(i, cur, true)) { // important for the openList polling

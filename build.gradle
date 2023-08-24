@@ -6,7 +6,6 @@ plugins {
 
 version = project.mod_version
 group = project.maven_group
-neo4jVersion = "5.11.0"
 
 repositories {
     mavenCentral()
@@ -20,8 +19,6 @@ dependencies {
 
         // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    compile "org.neo4j:neo4j:${neo4jVersion}"
     }
 
 processResources {

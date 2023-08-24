@@ -28,32 +28,6 @@ public class DStarLite implements java.io.Serializable {
         C1 = 1;
     }
 
-    public static void main(String[] args) {
-        DStarLite pf = new DStarLite(null);
-        pf.init(new State(0, 1, 0), new State(3, 1, 0));
-        pf.updateCell(2, 1, 0, -1);
-        pf.updateCell(2, 0, 0, -1);
-        pf.updateCell(2, 2, 0, -1);
-        pf.updateCell(3, 0, 0, -1);
-
-        System.out.println("Start node: (0,1)");
-        System.out.println("End node: (3,1)");
-
-        //Time the replanning
-        long begin = System.currentTimeMillis();
-        pf.replan();
-        pf.updateGoal(3, 2, 0);
-        long end = System.currentTimeMillis();
-
-        System.out.println("Time: " + (end - begin) + "ms");
-
-        List<State> path = pf.getPath();
-        for (State i : path) {
-            System.out.println(i);
-        }
-
-    }
-
 	public void init(BlockPos start, BlockPos goal) {
 		this.init(new State(start), new State(goal));
 	}
@@ -135,6 +109,7 @@ public class DStarLite implements java.io.Serializable {
     }
 
     public boolean replan() {
+        Stack<State> best = new Stack<>();
         path.clear();
 
         int res = computeShortestPath();
@@ -162,10 +137,12 @@ public class DStarLite implements java.io.Serializable {
             State smin = new State();
             int j = 0;
             Set<State> n = getSucc(cur);
-            n.add(openList.poll()); // add best
+            if (best.size() > 0) {
+                n.add(best.peek());
+            }
             System.out.println(n);
 
-            // TODO: then add better occupied detection
+            // TODO: add better occupied detection
 
             for (State i : n) {
                 if (i == null || occupied(i, cur, true)) { // important for the openList polling
@@ -195,14 +172,12 @@ public class DStarLite implements java.io.Serializable {
             }
 
             if (j == 0) {
-                path.remove(path.size() - 1);
-                if (path.size() < 1) {
-                    System.out.println("No path found!");
-                    return false;
-                }
-                smin = path.get(path.size() - 1);
+                smin = best.pop();
+                path.subList(path.indexOf(smin), path.size()).clear();
                 System.out.println("Rerouting to " + smin + " (" + k + ")");
                 updateCell(cur, -1);
+            } else if (j >= 2) {
+                best.push(smin);
             }
 
             if (cur == smin) {
@@ -475,13 +450,15 @@ public class DStarLite implements java.io.Serializable {
             return true;
         }
 
-        double c = calculateCost(u);
+        if (cellHash.get(u) == null) {
+            double c = calculateCost(u); // State{x=-149, y=-288, z=79}
 
-        if (cellHash.get(u) == null && r) {
-            updateCell(u, c);
+            if (r) {
+                updateCell(u, c);
+            }
         }
 
-        return c < 0;
+        return cellHash.get(u).cost < 0;
     }
 
     private double trueDist(State a, State b) {

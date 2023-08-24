@@ -1,10 +1,11 @@
 package com.daytrip.aicraft.util;
 
+import com.daytrip.aicraft.graph.RecipeNode;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-public record ItemInstance(Item item, int count) {
+public record ItemInstance(Item item, int count) implements RecipeNode {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

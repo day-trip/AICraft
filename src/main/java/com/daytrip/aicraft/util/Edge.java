@@ -1,10 +1,11 @@
 package com.daytrip.aicraft.util;
 
 
-public record Edge(EdgeType type, Double weight) {
+public record Edge(EdgeType type, int index, Double weight) {
     public enum EdgeType {
         CRAFT,
-        DROP,
-        CHEST
+        MOB,
+        CHEST,
+        BLOCK
     }
 }

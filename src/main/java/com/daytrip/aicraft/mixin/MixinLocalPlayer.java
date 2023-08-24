@@ -1,9 +1,7 @@
 package com.daytrip.aicraft.mixin;
 
-import net.fabricmc.fabric.mixin.resource.conditions.LootManagerMixin;
+import com.daytrip.aicraft.navigation.Navigator;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.level.storage.loot.LootDataManager;
-import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceWithLootingCondition;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,9 +14,18 @@ public class MixinLocalPlayer {
     @Unique
     private LocalPlayer player;
 
+    @Unique
+    private Navigator navigator;
+
     @Inject(method = "<init>", at = @At("TAIL"))
     void constructor(CallbackInfo ci) {
         System.out.println("Local player mixin activated!");
         this.player = (LocalPlayer) (Object) this;
+        this.navigator = new Navigator(this.player);
+    }
+
+    @Inject(method = "serverAiStep", at = @At("TAIL"))
+    void serverAiStep(CallbackInfo ci) {
+        this.navigator.tick();
     }
 }

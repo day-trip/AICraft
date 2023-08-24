@@ -5,5 +5,5 @@ import com.daytrip.aicraft.util.IngredientInstance;
 
 import java.util.List;
 
-public record RecipeCraftNode(List<IngredientInstance> ingredients) implements RecipeNode {
+public record RecipeCraftNode(IngredientInstance ingredient) implements RecipeNode {
 }

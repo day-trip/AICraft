@@ -2,20 +2,26 @@ package com.daytrip.aicraft.pathfinding;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.ai.sensing.VillagerHostilesSensor;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 public class DStarLite implements java.io.Serializable {
-    private final List<State> path = new ArrayList<State>();
+    private final List<State> path = new ArrayList<>();
     private final double C1;
     private final State s_goal = new State();
     private final int maxSteps;
-    private final PriorityQueue<State> openList = new PriorityQueue<State>();
-    private final HashMap<State, Float> openHash = new HashMap<State, Float>();
+    private final PriorityQueue<State> openList = new PriorityQueue<>();
+    private final HashMap<State, Float> openHash = new HashMap<>();
     private final double M_SQRT3 = Math.sqrt(3.0);
-    public HashMap<State, CellInfo> cellHash = new HashMap<State, CellInfo>();
+    public HashMap<State, CellInfo> cellHash = new HashMap<>();
     private double k_m;
     private State s_start = new State();
     private State s_last = new State();
@@ -109,6 +115,8 @@ public class DStarLite implements java.io.Serializable {
     }
 
     public boolean replan() {
+        long time = System.currentTimeMillis();
+
         Stack<State> best = new Stack<>();
         path.clear();
 
@@ -127,8 +135,16 @@ public class DStarLite implements java.io.Serializable {
 
         int k = 0;
 
+        double m_cmin = Double.POSITIVE_INFINITY;
+        double m_tmin = 0;
+        State m_smin = new State();
+
         while (cur.neq(s_goal)) {
             k++;
+            if (k > 20000) {
+                System.out.println("Took to long!");
+                return false;
+            }
             System.out.println("On: " + cur + " (" + k + ")");
             path.add(cur);
 
@@ -137,19 +153,17 @@ public class DStarLite implements java.io.Serializable {
             State smin = new State();
             int j = 0;
             Set<State> n = getSucc(cur);
-            if (best.size() > 0) {
-                n.add(best.peek());
-            }
+            /*n.add(m_smin);*/
             System.out.println(n);
 
-            // TODO: add better occupied detection
-
-            for (State i : n) {
-                if (i == null || occupied(i, cur, true)) { // important for the openList polling
+            for (State ii : n) {
+                // Skip if null
+                if (ii.eq(cur)) {
                     continue;
                 }
-                i = groundLevel(i);
-                if (path.contains(i)) {
+
+                State i = groundLevel(ii);
+                if (i.eq(cur) || path.contains(i) || occupied(i, cur, ii, true)/* || (i.neq(m_smin) && path.contains(i))*/) { // TODO: add back later & debug for better quality paths; my brain is too fried right now
                     continue;
                 }
                 j++;
@@ -169,38 +183,64 @@ public class DStarLite implements java.io.Serializable {
                     cmin = val;
                     smin = i;
                 }
+
+                if (close(val, m_cmin)) {
+                    if (m_tmin > val2) {
+                        m_tmin = val2;
+                        m_cmin = val;
+                        m_smin = i;
+                    }
+                } else if (val < m_cmin) {
+                    m_tmin = val2;
+                    m_cmin = val;
+                    m_smin = i;
+                }
             }
 
             if (j == 0) {
+                /*best.remove(cur);
+                smin = best.contains(m_smin) ? m_smin : best.peek();
+                best.remove(smin);
+                path.subList(path.indexOf(smin), path.size()).clear();*/
+                /*path.remove(path.size() - 1);
+                while (cellHash.getOrDefault(path.get(path.size() - 1), new CellInfo()).cost < 0) {
+                    path.remove(path.size() - 1);
+                }
+                smin = path.get(path.size() - 1);*/
+                best.remove(cur);
                 smin = best.pop();
-                path.subList(path.indexOf(smin), path.size()).clear();
                 System.out.println("Rerouting to " + smin + " (" + k + ")");
-                updateCell(cur, -1);
+                updateCell(cur, -2);
             } else if (j >= 2) {
                 best.push(smin);
             }
 
-            if (cur == smin) {
-                System.out.println("No path found!");
+            if (cur.eq(smin)) {
+                System.out.println("No path found! (hmm...)");
                 return false;
             }
 
+            /*if (smin.eq(m_smin)) {
+                System.out.println("Going to minimum value!");
+                updateCell(cur, -2);
+                int idx = path.indexOf(smin);
+                if (idx >= 0) {
+                    path.subList(idx, path.size()).clear();
+                }
+            }*/
+
             cur = new State(smin);
-            //cur = smin;
         }
         path.add(s_goal);
+        System.out.println("Only took so long *ugh* (" + (System.currentTimeMillis() - time) + "ms)");
         return true;
     }
 
     private int computeShortestPath() {
-        LinkedList<State> s = new LinkedList<>();
-
         if (openList.isEmpty()) return 1;
 
         int k = 0;
-        while ((!openList.isEmpty()) &&
-                (openList.peek().lt(s_start = calculateKey(s_start))) ||
-                (getRHS(s_start) != getG(s_start))) {
+        while (!openList.isEmpty() && openList.peek().lt(s_start = calculateKey(s_start)) || getRHS(s_start) != getG(s_start)) {
 
             if (k++ > maxSteps) {
                 System.out.println("At maxsteps");
@@ -211,7 +251,6 @@ public class DStarLite implements java.io.Serializable {
 
             boolean test = (getRHS(s_start) != getG(s_start));
 
-            //lazy remove
             while (true) {
                 if (openList.isEmpty()) return 1;
                 u = openList.poll();
@@ -229,20 +268,20 @@ public class DStarLite implements java.io.Serializable {
                 insert(u);
             } else if (getG(u) > getRHS(u)) { //needs update (got better)
                 setG(u, getRHS(u));
-                s = getPred(u);
+                LinkedList<State> s = getPred(u);
                 for (State i : s) {
                     updateVertex(i);
                 }
             } else {                         // g <= rhs, state has got worse
                 setG(u, Double.POSITIVE_INFINITY);
-                s = getPred(u);
+                LinkedList<State> s = getPred(u);
 
                 for (State i : s) {
                     updateVertex(i);
                 }
                 updateVertex(u);
             }
-        } //while
+        }
         return 0;
     }
 
@@ -266,7 +305,7 @@ public class DStarLite implements java.io.Serializable {
     }
 
     private LinkedList<State> getPred(State u) {
-        LinkedList<State> s = new LinkedList<State>();
+        LinkedList<State> s = new LinkedList<>();
         State tempState;
 
         for (int dz = -1; dz <= 1; dz++) {
@@ -284,10 +323,14 @@ public class DStarLite implements java.io.Serializable {
         return s;
     }
 
-    public void updateStart(int x, int y, int z) {
-        s_start.x = x;
-        s_start.y = y;
-        s_start.z = z;
+    public void updateStart(BlockPos b) {
+        this.updateStart(new State(b));
+    }
+
+    public void updateStart(State s) {
+        s_start.x = s.x;
+        s_start.y = s.y;
+        s_start.z = s.z;
 
         k_m += heuristic(s_last, s_start);
 
@@ -296,7 +339,11 @@ public class DStarLite implements java.io.Serializable {
 
     }
 
-    public void updateGoal(int x, int y, int z) {
+    public void updateGoal(BlockPos b) {
+        this.updateGoal(new State(b));
+    }
+
+    public void updateGoal(State s) {
         List<Pair<ipoint3, Double>> toAdd = new ArrayList<Pair<ipoint3, Double>>();
         Pair<ipoint3, Double> tempPoint;
 
@@ -317,9 +364,9 @@ public class DStarLite implements java.io.Serializable {
 
         k_m = 0;
 
-        s_goal.x = x;
-        s_goal.y = y;
-        s_goal.z = z;
+        s_goal.x = s.x;
+        s_goal.y = s.y;
+        s_goal.z = s.z;
 
         CellInfo tmp = new CellInfo();
         tmp.g = tmp.rhs = 0;
@@ -331,13 +378,12 @@ public class DStarLite implements java.io.Serializable {
         tmp.g = tmp.rhs = heuristic(s_start, s_goal);
         tmp.cost = C1;
         cellHash.put(s_start, tmp);
-        s_start = calculateKey(s_start);
+        calculateKey(s_start);
 
         s_last = s_start;
 
-        Iterator<Pair<ipoint3, Double>> iterator = toAdd.iterator();
-        while (iterator.hasNext()) {
-            tempPoint = iterator.next();
+        for (Pair<ipoint3, Double> ipoint3DoublePair : toAdd) {
+            tempPoint = ipoint3DoublePair;
             updateCell(tempPoint.first().x, tempPoint.first().y, tempPoint.first().z, tempPoint.second());
         }
 
@@ -384,11 +430,25 @@ public class DStarLite implements java.io.Serializable {
         cellHash.put(u, tmp);
     }
 
-	private double calculateCost(State s) {
+	private double calculateCost(State s, State g) {
 		BlockPos pos = s.asBlock();
 
+        if (!level.isInWorldBounds(pos)) {
+            return -1;
+        }
+
         BlockState state = level.getBlockState(pos);
-		if (!state.isSolid() && !level.getBlockState(pos.above()).isSolid() && (state.getBlock() == Blocks.WATER || s.z - groundLevel(s).z < 7)) {
+        boolean isWater = state.getBlock() == Blocks.WATER;
+        // todo: add more advanced bounding box matching
+		if (!state.isSolid() && !level.getBlockState(pos.above()).isSolid() && (isWater || s.z - g.z < 7)) {
+            if (level.getEntitiesOfClass(Monster.class, new AABB(pos, pos.offset(1, 1, 1)).inflate(5), EntitySelector.ENTITY_STILL_ALIVE).size() >= 1) {
+                return C1 * 4;
+            }
+
+            if (isWater) {
+                return C1 * 2;
+            }
+
 			return C1;
 		}
 
@@ -399,6 +459,10 @@ public class DStarLite implements java.io.Serializable {
         BlockPos pos = s.asBlock();
 
         while (!level.getBlockState(pos.below()).isSolid() && level.getBlockState(pos).getBlock() != Blocks.WATER) {
+            if (s.z - pos.getY() > level.getHeight()) {
+                System.out.println("Ground level is negative infinity at " + s);
+                return new State(s.x, s.y, Integer.MIN_VALUE);
+            }
             pos = pos.below();
         }
 
@@ -442,23 +506,19 @@ public class DStarLite implements java.io.Serializable {
     }
 
     private boolean occupied(State u) {
-        return this.occupied(u, null, false);
+        return this.occupied(u, null, groundLevel(u), false);
     }
 
-    private boolean occupied(State u, State f, boolean r) {
-        if (path.contains(u)) {
-            return true;
-        }
+    private boolean occupied(State position, State from, State groundPosition, boolean writeCost) {
+        if (cellHash.get(groundPosition) == null) {
+            double c = calculateCost(position, groundPosition); // State{x=-149, y=-288, z=79}
 
-        if (cellHash.get(u) == null) {
-            double c = calculateCost(u); // State{x=-149, y=-288, z=79}
-
-            if (r) {
-                updateCell(u, c);
+            if (writeCost) {
+                updateCell(groundPosition, c);
             }
         }
 
-        return cellHash.get(u).cost < 0;
+        return cellHash.get(groundPosition).cost < 0;
     }
 
     private double trueDist(State a, State b) {

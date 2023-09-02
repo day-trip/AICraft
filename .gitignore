@@ -1,9 +1,9 @@
 .idea
 .gradle
 build
-nativelib/*.dll
-nativelib/*.dll.exp
-nativelib/*.dll.lib
-nativelib/*.dll.pdb
 run/crash-reports
 run/logs
+nativelib/target/*/build
+nativelib/target/*/.fingerprint
+nativelib/target/*/deps
+nativelib/target/*/incremental

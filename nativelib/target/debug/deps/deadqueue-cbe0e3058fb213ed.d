@@ -1,0 +1,9 @@
+C:\Users\jai\IdeaProjects\AiCraft\nativelib\target\debug\deps\deadqueue-cbe0e3058fb213ed.rmeta: C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\lib.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\atomic.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\unlimited.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\resizable.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\limited.rs
+
+C:\Users\jai\IdeaProjects\AiCraft\nativelib\target\debug\deps\deadqueue-cbe0e3058fb213ed.d: C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\lib.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\atomic.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\unlimited.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\resizable.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\limited.rs
+
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\lib.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\atomic.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\unlimited.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\resizable.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\deadqueue-0.2.4\src\limited.rs:

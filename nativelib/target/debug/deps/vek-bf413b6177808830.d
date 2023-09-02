@@ -1,0 +1,14 @@
+C:\Users\jai\IdeaProjects\AiCraft\nativelib\target\debug\deps\vek-bf413b6177808830.rmeta: C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\lib.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\ops.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\vec.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\mat.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\quaternion.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transition.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transform.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\bezier.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\geom.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\simd_traits.rs
+
+C:\Users\jai\IdeaProjects\AiCraft\nativelib\target\debug\deps\vek-bf413b6177808830.d: C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\lib.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\ops.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\vec.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\mat.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\quaternion.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transition.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transform.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\bezier.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\geom.rs C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\simd_traits.rs
+
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\lib.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\ops.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\vec.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\mat.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\quaternion.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transition.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\transform.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\bezier.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\geom.rs:
+C:\Users\jai\.cargo\registry\src\index.crates.io-6f17d22bba15001f\vek-0.15.10\src\simd_traits.rs:

@@ -2,7 +2,9 @@ package com.daytrip.aicraft.pathfinding;
 
 import net.minecraft.core.BlockPos;
 
-public class State implements Comparable, java.io.Serializable {
+import java.util.Objects;
+
+public class State implements Comparable<State>, java.io.Serializable {
     public int x = 0;
     public int y = 0;
     public int z = 0;
@@ -58,8 +60,7 @@ public class State implements Comparable, java.io.Serializable {
         return k.second() < s2.k.second();
     }
 
-    public int compareTo(Object that) {
-        State other = (State) that;
+    public int compareTo(State other) {
         if (k.first() - 0.00001 > other.k.first()) return 1;
         else if (k.first() < other.k.first() - 0.00001) return -1;
         if (k.second() > other.k.second()) return 1;
@@ -67,15 +68,10 @@ public class State implements Comparable, java.io.Serializable {
         return 0;
     }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + x;
-		result = prime * result + y;
-		result = prime * result + z;
-		return result;
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y, z);
+    }
 
     @Override
     public boolean equals(Object aThat) {

@@ -1,0 +1,24 @@
+[package]
+name = "nativelib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "pathlib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pathfinder"
+path = "src/bin/bin.rs"
+
+[build-dependencies]
+cbindgen = "0.25.0"
+
+[dependencies]
+parking_lot = "0.12.1"
+rand = "0.8.5"
+num-traits = "0.2"
+num-derive = "0.4"
+sprs = "0.11.1"
+num_x = "0.2.2"

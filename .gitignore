@@ -3,7 +3,16 @@
 build
 run/crash-reports
 run/logs
+run/saves/*/advancements
+run/saves/*/stats
+run/.fabric
+run/*.log
+run/nativelog
 nativelib/target/*/build
 nativelib/target/*/.fingerprint
 nativelib/target/*/deps
 nativelib/target/*/incremental
+nativelib/target/.rustc_info.json
+nativelib/target/CACHEDIR.TAG
+nativelib/flamegraph.svg
+nativelib/target/doc

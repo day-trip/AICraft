@@ -5,47 +5,94 @@ mod util;
 #[macro_use]
 extern crate num_derive;
 
+#[macro_use] extern crate log;
+
 pub use crate::path::{pathfinder::Pathfinder, state::State};
 pub use crate::util::{hashmap::FxHasher, bitset::BoolBitset};
 pub use crate::chunk::{chunk::Chunk, chunk::ChunkManager};
+use log::LevelFilter;
+use log4rs::append::file::FileAppender;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::config::{Appender, Root};
+use log4rs::encode::pattern::PatternEncoder;
 
 use std::cell::Cell;
 use std::{ptr, slice};
+use log4rs::Config;
 use parking_lot::Mutex;
+use crate::chunk::chunk::{HEIGHT, WIDTH, SHIFT, FULL};
 
 static PATHFINDER_STATE: Mutex<Cell<Option<Pathfinder>>> = Mutex::new(Cell::new(None));
 static CHUNK_STATE: Mutex<Cell<Option<ChunkManager>>> = Mutex::new(Cell::new(None));
 
+/**
+Initialized the library, including
+- Logging
+- Global state
+*/
 #[no_mangle]
 pub extern "C" fn init() {
-    println!("Hello world 1");
+    let pattern = "{l} [{d(%H:%M:%S)}]: {m}\n";
+
+    let logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new(pattern)))
+        .build("nativelog/output.log")
+        .expect("Logging filesystem setup failed!");
+
+    let stdout = ConsoleAppender::builder()
+        .encoder(Box::new(PatternEncoder::new(pattern)))
+        .build();
+
+    let config = Config::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
+        .build(Root::builder()
+            .appender("logfile")
+            .appender("stdout")
+            .build(LevelFilter::Trace))
+        .expect("Logging configuration failed!");
+
+    log4rs::init_config(config).expect("Logging initialization failed!");
+
+    info!("Native library initialized!");
+
     CHUNK_STATE.lock().set(Some(ChunkManager::create()));
     PATHFINDER_STATE.lock().set(Some(Pathfinder::create(&CHUNK_STATE)));
 }
 
+/**
+Initializes the pathfinding algorithm to the start [`State`] and the goal [`State`]
+*/
 #[no_mangle]
 pub extern "C" fn pf_init(start: State, goal: State) {
-    println!("Hello world 2");
+    info!("Pathfinding initialized (from {} to {})!", start.to_string(), goal.to_string());
     PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").init(start, goal);
 }
 
+/**
+Updates the cost of a cell
+*/
 #[no_mangle]
 pub extern "C" fn pf_update_cell(cell: State, cost: f64) {
+    info!("Externally updated cell {} to {}", cell.to_string(), cost);
     PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").update_cell(cell, cost, true);
 }
 
 #[no_mangle]
 pub extern "C" fn pf_replan() -> i16 {
+    info!("Replanning path!");
     PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").replan()
 }
 
 #[no_mangle]
 pub extern "C" fn pf_update_start(start: State) {
+    info!("Updating start to {}", start.to_string());
     PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").update_start(start);
 }
 
 #[no_mangle]
 pub extern "C" fn pf_update_goal(goal: State) {
+    info!("Updating goal to {}", goal.to_string());
     PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").update_goal(goal);
 }
 
@@ -78,87 +125,49 @@ pub extern "C" fn pf_get_debug(arr: *mut State) {
 }
 
 #[no_mangle]
-pub extern "C" fn chunk_build(x: i64, y: i64, arr: *const i8, len: i32) {
-    println!("New chunk: {}, {}", x, y);
+pub extern "C" fn chunk_build(x: i64, y: i64, arr: *const u8) {
+    info!("Building chunk: {}, {}", x, y);
     unsafe {
-        CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").build((x, y), Box::from_raw(slice::from_raw_parts_mut(arr as *mut i8, len as usize)));
+        CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").build((x, y), slice::from_raw_parts_mut(arr as *mut u8, WIDTH * WIDTH * HEIGHT));
     }
 }
 
 #[no_mangle]
 pub extern "C" fn chunk_remove(x: i64, y: i64) {
-    println!("Removing chunk (but not really): {}, {}", x, y);
-    CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").remove((x, y));
+    info!("Removing chunk: {}, {}", x, y);
+    // CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").remove((x, y));
 }
 
 #[no_mangle]
 pub extern "C" fn chunk_set(x: i64, y: i64, z: i64, value: i8) {
-    println!("Setting block {}, {}, {} to {}", x, y, z, value);
+    info!("Setting block {}, {}, {} to {}", x, y, z, value);
     CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").set(x as isize, y as isize, z as isize, value);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{ChunkManager};
-
-    /*#[test]
-    fn pathfinder_works() {
-        let mut pf = Pathfinder::create();
-
-        pf.init(State::create(0, 0, 0), State::create(0, 100, 0));
-
-        assert!(pf.path.is_empty());
-
-        println!("maybe");
-
-        let mut time = Instant::now();
-        pf.replan();
-        println!("{}", (Instant::now() - time).as_nanos());
-        time = Instant::now();
-        pf.update_start(State::create(0, 1, 0));
-        pf.replan();
-        println!("{}", (Instant::now() - time).as_nanos());
-        time = Instant::now();
-        pf.update_start(State::create(0, 3, 0));
-        pf.replan();
-        println!("{}", (Instant::now() - time).as_nanos());
-
-        assert!(!pf.path.is_empty());
-    }*/
+    // TODO: create advanced testing environment simulator
+    use super::*;
 
     #[test]
     fn chunking_works() {
         let mut cm = ChunkManager::create();
-        cm.build((0, 0), vec![0i8; 16 * 16 * 384].into_boxed_slice());
-        assert_eq!(cm.get(0, 0, 0).unwrap(), 0);
-        cm.set(1, 1, 3210, 5);
-        assert_eq!(cm.get(1, 1, 3210).unwrap(), 5);
+        let mut data = vec![0; FULL];
+        data[(15 * WIDTH * HEIGHT) + ((13 + SHIFT as isize) as usize * WIDTH) + 14] = 12;
+        data[(15 * WIDTH * HEIGHT) + ((304 + SHIFT as isize) as usize * WIDTH) + 14] = 13;
+        data[(15 * WIDTH * HEIGHT) + ((96 + SHIFT as isize) as usize * WIDTH) + 14] = 14;
+        cm.build((0, 0), data.as_slice());
 
-        cm.build((1, 0), vec![0i8; 16 * 16 * 384].into_boxed_slice());
-        assert_eq!(cm.get(17, 0, 0).unwrap(), 0);
-        assert_ne!(cm.get(0, 17, 0).unwrap_or(0), 1);
-    }
+        assert_eq!(cm.get(0, 0, 0).unwrap(), -1);
+        assert_eq!(cm.get(15, 14, 13).unwrap(), 11);
+        assert_eq!(cm.get(15, 14, 304).unwrap(), 12);
+        assert_eq!(cm.get(15, 14, 96).unwrap(), 13);
 
-    #[test]
-    fn math_works_owo() {
-        println!("{}", wrap(-1));
-        println!("{}", wrap(170));
-    }
+        // cm.set(1, 1, 128, 5);
+        // assert_eq!(cm.get(1, 1, 128).unwrap(), 5);
 
-    #[test]
-    fn jai_is_not_dumb() {
-        let mut i = 10;
-        while 10 == i {
-            i -= 1;
-            println!("Hello world!");
-        }
-    }
+        cm.build((1, 0), vec![2; FULL].as_slice());
 
-    fn wrap(mut num: isize) -> isize {
-        num = num % 16;
-
-        if num < 0 { num = 16 + num }
-
-        num
+        assert_eq!(cm.get(17, 0, 0).unwrap(), 1);
     }
 }

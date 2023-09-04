@@ -7,10 +7,12 @@ import com.daytrip.aicraft.natives.Chunk;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,26 +42,13 @@ public class AicraftClient implements ClientModInitializer {
             new Thread(() -> {
                 System.out.println("Handling chunk: " + pos);
 
-                /*int top = HEIGHT;
-                for (int x = 0; x < WIDTH; x++) {
-                    for (int z = 0; z < WIDTH; z++) {
-                        for (int y = HEIGHT; y > 0; y--) {
-                            top = y + 1;
-                            var state = chunk.getBlockState(pos.getBlockAt(x, y - SHIFT, z));
-                            if (!state.isAir()) {
-                                break;
-                            }
-                        }
-                    }
-                }*/
-
                 byte[] data = new byte[WIDTH * WIDTH * HEIGHT];
 
                 for (int x = 0; x < WIDTH; x++) {
                     for (int z = 0; z < WIDTH; z++) {
                         for (int y = 0; y < HEIGHT; y++) {
                             var state = chunk.getBlockState(pos.getBlockAt(x, y - SHIFT, z));
-                            data[(x * WIDTH * HEIGHT) + ((y) * WIDTH) + z] = blockType(state);
+                            data[(x * WIDTH * HEIGHT) + ((y) * WIDTH) + z] = (byte) (blockType(state) + 1);
                         }
                     }
                 }
@@ -75,10 +64,9 @@ public class AicraftClient implements ClientModInitializer {
         });
 
         BlockUpdateCallback.EVENT.register((pos, state) -> {
-            System.out.println("WATO WAI");
             ChunkPos cp = new ChunkPos(pos);
-            if (chunks.contains(new Pair<>(cp.x, cp.z))) {
-                System.out.println("SAVED THE DAY");
+            assert Minecraft.getInstance().level != null;
+            if (chunks.contains(new Pair<>(cp.x, cp.z)) && blockType(Minecraft.getInstance().level.getBlockState(pos)) != blockType(state)) {
                 Chunk.set(pos.getX(), pos.getZ(), pos.getY(), blockType(state));
             }
             return false;

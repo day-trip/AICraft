@@ -27,7 +27,7 @@ pub struct Pathfinder<'a> {
     open_list: BinaryHeap<State>,
 
     // Caches
-    ground_cache: HashMap<i64, i64, BuildHasherDefault<FxHasher>>,
+    ground_cache: HashMap<(i64, i64), i64, BuildHasherDefault<FxHasher>>,
     sqrt2: f64,
     sqrt3: f64,
 
@@ -144,8 +144,9 @@ impl<'a> Pathfinder<'a> {
     }
 
     fn get_block(&self, s: State) -> i8 {
-        println!("Getting block at: {}", s.to_string());
+        debug!("Getting block at: {}", s.to_string());
         let state = self.chunk_manager.lock().get_mut().as_mut().expect("Not initialized!").get(s.x as isize, s.y as isize, s.z as isize).expect(&*format!("Chunk doesn't exist! {}, {}, {}", s.x, s.y, s.z));
+        trace!("({})", state);
         // BlockType::from_i8(state).expect("Invalid block!") // !path -47 71 -237
         state
     }
@@ -153,7 +154,7 @@ impl<'a> Pathfinder<'a> {
     fn ground_level(&mut self, mut s: State) -> State {
         return s;
 
-        println!("Transforming: {}", s.to_string());
+        /*debug!("Transforming: {}", s.to_string());
         let os = s.clone();
 
         /*
@@ -166,14 +167,14 @@ impl<'a> Pathfinder<'a> {
         Went from (-30, -250, 64) to 63 (cached).
          */
 
-        match self.ground_cache.get(&s.z) {
+        match self.ground_cache.get(&(s.x, s.y)) {
             None => {
                 while self.get_block(s.below()) == 0 {
                     s.i_below();
                 }
 
                 println!("Went from {} to {}.", os.to_string(), s.to_string());
-                self.ground_cache.insert(os.z, s.z);
+                self.ground_cache.insert((os.x, os.y), s.z);
 
                 s
             }
@@ -181,7 +182,7 @@ impl<'a> Pathfinder<'a> {
                 println!("Went from {} to {} (cached).", s.to_string(), z.to_string());
                 s.set(None, None, Some(*z))
             }
-        }
+        }*/
     }
 
     fn occupied(&mut self, s: State, g: Option<State>, u: bool) -> bool {
@@ -195,10 +196,10 @@ impl<'a> Pathfinder<'a> {
         let above = self.get_block(s.above());
 
         let o = if at == -1 || above == -1 {
-            println!("too solid!");
+            trace!("too solid!");
             -1.0
         } else if s.z - g.unwrap_or(self.ground_level(s)).z > 5 {
-            println!("too high!");
+            trace!("too high!");
             -1.0
         } else {
             self.default_cost
@@ -264,7 +265,7 @@ impl<'a> Pathfinder<'a> {
         let mut visited: HashSet<State, BuildHasherDefault<FxHasher>> = HashSet::default();
 
         if self.compute_shortest_path() < 0 {
-            println!("No Path to Goal! (CSP)");
+            warn!("No Path to Goal! (CSP)");
             return -1;
         }
 
@@ -273,23 +274,21 @@ impl<'a> Pathfinder<'a> {
         let mut cur = self.start;
 
         if self.get_g(cur).is_infinite() {
-            println!("No Path to Goal! (Bad G)");
+            warn!("No Path to Goal! (Bad G)");
             return -1;
         }
-
-        println!("GOAL: {}", self.goal.to_string());
 
         while cur != self.goal {
             k += 1;
             if k > 20 {
-                println!("Path too long!");
+                warn!("Path too long!");
                 return -1;
             }
 
             self.path.push(cur);
             visited.insert(cur);
 
-            println!("Visiting {}", cur.to_string());
+            debug!("Visiting {}", cur.to_string());
 
             let mut cmin = f64::INFINITY;
             let mut tmin = 0.0;
@@ -297,7 +296,7 @@ impl<'a> Pathfinder<'a> {
 
             let s = self.get_succ(cur);
 
-            let mut dedupe: Vec<State> = Vec::with_capacity(26);
+            let mut dedupe: HashSet<State, BuildHasherDefault<FxHasher>> = HashSet::default();
 
             for ii in s {
                 if ii == cur { continue; }
@@ -307,12 +306,12 @@ impl<'a> Pathfinder<'a> {
                 self.debug.push(i);
 
                 if i == cur || dedupe.contains(&i) || visited.contains(&i) || self.occupied(i, Some(ii), true) { continue; }
-                dedupe.push(i);
+                dedupe.insert(i);
 
                 let val = self.cost(cur, i) + self.get_g(i);
                 let val2 = self.true_distance(i, self.goal) + self.true_distance(self.start, i);
 
-                println!("For {}: {}, {}", cur.to_string(), val, val2);
+                debug!("For {}: {}, {}", cur.to_string(), val, val2);
 
                 if self.close(val, cmin) {
                     if tmin > val2 {
@@ -328,7 +327,7 @@ impl<'a> Pathfinder<'a> {
             }
 
             let elements: Vec<String> = dedupe.iter().map(|item| item.to_string()).collect();
-            println!("All valid: [{}]", elements.join(", "));
+            debug!("All valid: [{}]", elements.join(", "));
 
             if dedupe.is_empty() {
                 best.retain(|&x| x != cur);
@@ -345,13 +344,13 @@ impl<'a> Pathfinder<'a> {
                     visited.insert(*s);
                 }
 
-                println!("Rerouting to {}.", smin.to_string());
+                debug!("Rerouting to {}.", smin.to_string());
             } else if dedupe.len() >= 2 {
                 best.push(smin);
             }
 
             if cur == smin {
-                println!("No path found! (Duplicate State)");
+                warn!("No path found! (Duplicate State)");
                 return -1;
             }
 
@@ -460,14 +459,14 @@ impl<'a> Pathfinder<'a> {
         let mut k = 0;
 
         let elements: Vec<String> = self.open_list.iter().map(|item| item.to_string()).collect();
-        println!("All open: [{}]", elements.join(", "));
+        debug!("All open: [{}]", elements.join(", "));
 
         let key = self.calculate_key(self.start);
         while !self.open_list.is_empty() && (*self.open_list.peek().unwrap() < key) || self.get_rhs(self.start) != self.get_g(self.start) {
             k += 1;
 
             if k > self.max_steps {
-                println!("At maxsteps :(");
+                warn!("At maximum steps!");
                 return -1;
             }
 

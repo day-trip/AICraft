@@ -21,7 +21,7 @@ public interface NativeLib {
 
     void pf_get_debug(State[] arr);
 
-    void chunk_build(int x, int y, byte[] arr, int length);
+    void chunk_build(int x, int y, byte[] arr);
 
     void chunk_remove(int x, int y);
 

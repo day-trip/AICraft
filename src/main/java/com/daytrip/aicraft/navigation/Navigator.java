@@ -54,9 +54,9 @@ public class Navigator {
 
     private void replan() {
         AICraftCommandHandler.chatLog("Replanning took " + Pathfinder.replan() + "ms.");
-        for (BlockPos b : Pathfinder.getDebugBlocks()) {
+        /*for (BlockPos b : Pathfinder.getDebugBlocks()) {
             this.player.clientLevel.setBlock(b.below(), Blocks.REDSTONE_BLOCK.defaultBlockState(), 2);
-        }
+        }*/
         for (BlockPos b : Pathfinder.getBlocks()) {
             this.player.clientLevel.setBlock(b.below(), Blocks.DIAMOND_BLOCK.defaultBlockState(), 2);
         }

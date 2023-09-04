@@ -4,7 +4,7 @@ import static com.daytrip.aicraft.natives.Natives.INSTANCE;
 
 public class Chunk {
     public static void build(int x, int y, byte[] data) {
-        INSTANCE.chunk_build(x, y, data, data.length);
+        INSTANCE.chunk_build(x, y, data);
     }
 
     public static void remove(int x, int y) {

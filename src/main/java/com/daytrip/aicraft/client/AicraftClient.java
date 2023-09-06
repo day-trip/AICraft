@@ -3,6 +3,7 @@ package com.daytrip.aicraft.client;
 import com.daytrip.aicraft.command.AICraftCommandHandler;
 import com.daytrip.aicraft.event.BlockUpdateCallback;
 import com.daytrip.aicraft.event.SendChatCallback;
+import com.daytrip.aicraft.mixin.IMixinBlockBehaviour;
 import com.daytrip.aicraft.natives.Chunk;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.api.ClientModInitializer;
@@ -12,7 +13,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,6 +39,11 @@ public class AicraftClient implements ClientModInitializer {
         ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
             ChunkPos pos = chunk.getPos();
 
+            if (chunks.contains(new Pair<>(pos.x, pos.z))) {
+                return;
+            }
+            chunks.add(new Pair<>(pos.x, pos.z));
+
             new Thread(() -> {
                 System.out.println("Handling chunk: " + pos);
 
@@ -54,7 +59,6 @@ public class AicraftClient implements ClientModInitializer {
                 }
 
                 Chunk.build(pos.x, pos.z, data);
-                chunks.add(new Pair<>(pos.x, pos.z));
             }).start();
         });
 
@@ -74,6 +78,6 @@ public class AicraftClient implements ClientModInitializer {
     }
 
     private static byte blockType(BlockState state) {
-        return (byte) (state.isSolid() ? -1 : state.isAir() ? 0 : state.getBlock() == Blocks.WATER ? 1 : 2);
+        return (byte) (((IMixinBlockBehaviour) state.getBlock()).hasCollision() ? -1 : state.isAir() ? 0 : state.getBlock() == Blocks.WATER ? 1 : 2);
     }
 }

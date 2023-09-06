@@ -16,3 +16,4 @@ nativelib/target/.rustc_info.json
 nativelib/target/CACHEDIR.TAG
 nativelib/flamegraph.svg
 nativelib/target/doc
+nativelib/.env

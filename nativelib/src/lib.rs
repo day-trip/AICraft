@@ -1,15 +1,23 @@
 mod path;
 mod chunk;
 mod util;
+mod script;
+mod ai;
+mod debug;
 
 #[macro_use]
 extern crate num_derive;
 
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate dotenv_codegen;
+
+#[macro_use]
+extern crate log;
 
 pub use crate::path::{pathfinder::Pathfinder, state::State};
 pub use crate::util::{hashmap::FxHasher, bitset::BoolBitset};
 pub use crate::chunk::{chunk::Chunk, chunk::ChunkManager};
+pub use crate::script::script::{ScriptManager};
 use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::append::console::ConsoleAppender;
@@ -119,8 +127,8 @@ pub extern "C" fn pf_get_debug_len() -> usize {
 pub extern "C" fn pf_get_debug(arr: *mut State) {
     let path = PATHFINDER_STATE.lock().get_mut().as_mut().expect("Not initialized!").debug.clone();
 
-    unsafe {
-        ptr::copy_nonoverlapping(path.as_ptr(), arr, path.len());
+        unsafe {
+            ptr::copy_nonoverlapping(path.as_ptr(), arr, path.len());
     }
 }
 
@@ -135,7 +143,7 @@ pub extern "C" fn chunk_build(x: i64, y: i64, arr: *const u8) {
 #[no_mangle]
 pub extern "C" fn chunk_remove(x: i64, y: i64) {
     info!("Removing chunk: {}, {}", x, y);
-    // CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").remove((x, y));
+    CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").remove((x, y));
 }
 
 #[no_mangle]
@@ -146,8 +154,10 @@ pub extern "C" fn chunk_set(x: i64, y: i64, z: i64, value: i8) {
 
 #[cfg(test)]
 mod tests {
+    use crate::ai::ai::AI;
     // TODO: create advanced testing environment simulator
     use super::*;
+    use chatgpt::prelude::*;
 
     #[test]
     fn chunking_works() {
@@ -163,11 +173,25 @@ mod tests {
         assert_eq!(cm.get(15, 14, 304).unwrap(), 12);
         assert_eq!(cm.get(15, 14, 96).unwrap(), 13);
 
-        // cm.set(1, 1, 128, 5);
-        // assert_eq!(cm.get(1, 1, 128).unwrap(), 5);
+        cm.set(1, 1, 128, 5);
+        assert_eq!(cm.get(1, 1, 128).unwrap(), 5);
+
+        assert_eq!(cm.get(0, 0, 0).unwrap(), -1);
+        assert_eq!(cm.get(15, 14, 13).unwrap(), 11);
+        assert_eq!(cm.get(15, 14, 304).unwrap(), 12);
+        assert_eq!(cm.get(15, 14, 96).unwrap(), 13);
 
         cm.build((1, 0), vec![2; FULL].as_slice());
 
         assert_eq!(cm.get(17, 0, 0).unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn ai_works() -> Result<()> {
+        let mut ai = AI::create();
+        ai.create_conversation();
+        ai.cycle().await?;
+        println!("Done!");
+        Ok(())
     }
 }

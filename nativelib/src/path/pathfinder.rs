@@ -7,6 +7,7 @@ use parking_lot::Mutex;
 use crate::path::cellinfo::CellInfo;
 use crate::path::state::State;
 use crate::chunk::chunk::ChunkManager;
+use crate::debug::debug::TRACE_PATH_BLOCK;
 use crate::util::hashmap::FxHasher;
 use crate::path::block_type::BlockType;
 
@@ -143,18 +144,15 @@ impl<'a> Pathfinder<'a> {
         (self.sqrt3 - 1.0) * min + (self.sqrt2 - self.sqrt3) * mid + max
     }
 
-    fn get_block(&self, s: State) -> i8 {
+    fn get_block(&self, s: State) -> BlockType {
         debug!("Getting block at: {}", s.to_string());
         let state = self.chunk_manager.lock().get_mut().as_mut().expect("Not initialized!").get(s.x as isize, s.y as isize, s.z as isize).expect(&*format!("Chunk doesn't exist! {}, {}, {}", s.x, s.y, s.z));
-        trace!("({})", state);
-        // BlockType::from_i8(state).expect("Invalid block!") // !path -47 71 -237
-        state
+        // trace!("({})", state);
+        BlockType::from_i8(state).expect("Invalid block!") // !path -47 71 -237
     }
 
     fn ground_level(&mut self, mut s: State) -> State {
-        return s;
-
-        /*debug!("Transforming: {}", s.to_string());
+        debug!("Transforming: {}", s.to_string());
         let os = s.clone();
 
         /*
@@ -169,20 +167,20 @@ impl<'a> Pathfinder<'a> {
 
         match self.ground_cache.get(&(s.x, s.y)) {
             None => {
-                while self.get_block(s.below()) == 0 {
+                while self.get_block(s.below()) != BlockType::SOLID {
                     s.i_below();
                 }
 
-                println!("Went from {} to {}.", os.to_string(), s.to_string());
+                trace!("Went from {} to {}.", os.to_string(), s.to_string());
                 self.ground_cache.insert((os.x, os.y), s.z);
 
                 s
             }
             Some(z) => {
-                println!("Went from {} to {} (cached).", s.to_string(), z.to_string());
+                trace!("Went from {} to {} (cached).", s.to_string(), z.to_string());
                 s.set(None, None, Some(*z))
             }
-        }*/
+        }
     }
 
     fn occupied(&mut self, s: State, g: Option<State>, u: bool) -> bool {
@@ -195,11 +193,15 @@ impl<'a> Pathfinder<'a> {
         let at = self.get_block(s);
         let above = self.get_block(s.above());
 
-        let o = if at == -1 || above == -1 {
-            trace!("too solid!");
+        let o = if at == BlockType::SOLID || above == BlockType::SOLID {
+            if TRACE_PATH_BLOCK {
+                trace!("too solid!");
+            }
             -1.0
         } else if s.z - g.unwrap_or(self.ground_level(s)).z > 5 {
-            trace!("too high!");
+            if TRACE_PATH_BLOCK {
+                trace!("too high!");
+            }
             -1.0
         } else {
             self.default_cost
@@ -256,7 +258,6 @@ impl<'a> Pathfinder<'a> {
 
     pub fn replan(&mut self) -> i16 {
         let ms = Instant::now();
-        let mut k = 0;
 
         self.path.clear();
         self.debug.clear();
@@ -279,12 +280,6 @@ impl<'a> Pathfinder<'a> {
         }
 
         while cur != self.goal {
-            k += 1;
-            if k > 20 {
-                warn!("Path too long!");
-                return -1;
-            }
-
             self.path.push(cur);
             visited.insert(cur);
 
@@ -299,13 +294,12 @@ impl<'a> Pathfinder<'a> {
             let mut dedupe: HashSet<State, BuildHasherDefault<FxHasher>> = HashSet::default();
 
             for ii in s {
-                if ii == cur { continue; }
-
                 let i = self.ground_level(ii);
+
+                if i == cur || dedupe.contains(&i) || visited.contains(&i) || self.occupied(i, Some(ii), true) { continue; }
 
                 self.debug.push(i);
 
-                if i == cur || dedupe.contains(&i) || visited.contains(&i) || self.occupied(i, Some(ii), true) { continue; }
                 dedupe.insert(i);
 
                 let val = self.cost(cur, i) + self.get_g(i);

@@ -22,3 +22,9 @@ num-traits = "0.2"
 num-derive = "0.4"
 log = "0.4.20"
 log4rs = "1.2.0"
+mlua = { version = "0.9.1", features = ["lua54", "vendored"] }
+dotenv_codegen = "0.15.0"
+chatgpt_rs = { version = "1.2.1", features = ["functions", "functions_extra"] }
+tokio = { version = "1.32.0", features = ["test-util", "macros"] }
+serde = "1.0.188"
+openai-api-rs = "1.0.1"

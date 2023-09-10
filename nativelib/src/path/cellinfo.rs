@@ -1,6 +1,6 @@
 use crate::BoolBitset;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 #[repr(C)]
 pub struct CellInfo {
     pub g: f64,

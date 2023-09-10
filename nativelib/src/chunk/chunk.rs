@@ -101,7 +101,7 @@ impl Chunk {
     }
 
     pub fn set(&mut self, x: usize, y: usize, z: isize, value: u8) {
-        assert!(z < (HEIGHT - SHIFT) as isize && z > -(SHIFT as isize), "Cannot set: Out of bounds!");
+        assert!(z < (HEIGHT - SHIFT) as isize && z >= -(SHIFT as isize), "Cannot set: Out of bounds!");
         let index = Chunk::calc_index(x, y, z);
         assert!(index < FULL, "Cannot set: Out of bounds array access!");
         if TRACE_CHUNK_ACCESS {
@@ -121,8 +121,8 @@ impl Chunk {
     }
 
     pub fn get(&self, x: usize, y: usize, z: isize) -> u8 {
-        // println!("{:?}", self.data);
-        assert!(z < (HEIGHT - SHIFT) as isize && z > -(SHIFT as isize), "Cannot get: Out of bounds!");
+        // trace!("{:?}", self.data);
+        assert!(z < (HEIGHT - SHIFT) as isize && z >= -(SHIFT as isize), "Cannot get: Out of bounds!");
         let index = Chunk::calc_index(x, y, z);
         assert!(index < FULL, "Cannot get: Out of bounds array access!");
         if TRACE_CHUNK_ACCESS {

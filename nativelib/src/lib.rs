@@ -1,9 +1,10 @@
 mod path;
 mod chunk;
 mod util;
-mod script;
 mod ai;
 mod debug;
+mod state;
+mod save;
 
 #[macro_use]
 extern crate num_derive;
@@ -14,10 +15,14 @@ extern crate dotenv_codegen;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate serde;
+
 pub use crate::path::{pathfinder::Pathfinder, state::State};
 pub use crate::util::{hashmap::FxHasher, bitset::BoolBitset};
 pub use crate::chunk::{chunk::Chunk, chunk::ChunkManager};
-pub use crate::script::script::{ScriptManager};
+pub use crate::ai::script::{ScriptManager};
+pub use crate::ai::ai::{AI};
 use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::append::console::ConsoleAppender;
@@ -26,12 +31,44 @@ use log4rs::encode::pattern::PatternEncoder;
 
 use std::cell::Cell;
 use std::{ptr, slice};
+use std::ffi::{c_char, CStr, CString};
 use log4rs::Config;
 use parking_lot::Mutex;
-use crate::chunk::chunk::{HEIGHT, WIDTH, SHIFT, FULL};
+use crate::chunk::chunk::{HEIGHT, WIDTH};
+pub use crate::state::world::World;
 
-static PATHFINDER_STATE: Mutex<Cell<Option<Pathfinder>>> = Mutex::new(Cell::new(None));
-static CHUNK_STATE: Mutex<Cell<Option<ChunkManager>>> = Mutex::new(Cell::new(None));
+pub static PATHFINDER_STATE: Mutex<Cell<Option<Pathfinder>>> = Mutex::new(Cell::new(None));
+pub static CHUNK_STATE: Mutex<Cell<Option<ChunkManager>>> = Mutex::new(Cell::new(None));
+pub static AI_STATE: Mutex<Cell<Option<AI>>> = Mutex::new(Cell::new(None));
+pub static WORLD_STATE: Mutex<Cell<Option<World>>> = Mutex::new(Cell::new(None));
+
+pub fn configure_logging(file: Option<&str>) {
+    let pattern = "{l} [{d(%H:%M:%S)}]: {m}\n";
+
+    let stdout = ConsoleAppender::builder()
+        .encoder(Box::new(PatternEncoder::new(pattern)))
+        .build();
+
+    let mut builder = Config::builder();
+    let mut root = Root::builder();
+    if file.is_some() {
+        let logfile = FileAppender::builder()
+            .encoder(Box::new(PatternEncoder::new(pattern)))
+            .build(file.unwrap())
+            .expect("Logging filesystem setup failed!");
+        builder = builder.appender(Appender::builder().build("logfile", Box::new(logfile)));
+        root = root.appender("logfile");
+    }
+
+    let config = builder
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
+        .build(root
+            .appender("stdout")
+            .build(LevelFilter::Trace))
+        .expect("Logging configuration failed!");
+
+    log4rs::init_config(config).expect("Logging initialization failed!");
+}
 
 /**
 Initialized the library, including
@@ -40,32 +77,12 @@ Initialized the library, including
 */
 #[no_mangle]
 pub extern "C" fn init() {
-    let pattern = "{l} [{d(%H:%M:%S)}]: {m}\n";
-
-    let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(pattern)))
-        .build("nativelog/output.log")
-        .expect("Logging filesystem setup failed!");
-
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(pattern)))
-        .build();
-
-    let config = Config::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .appender(Appender::builder().build("stdout", Box::new(stdout)))
-        .build(Root::builder()
-            .appender("logfile")
-            .appender("stdout")
-            .build(LevelFilter::Trace))
-        .expect("Logging configuration failed!");
-
-    log4rs::init_config(config).expect("Logging initialization failed!");
-
+    configure_logging(Some("nativelog/output.log"));
     info!("Native library initialized!");
 
     CHUNK_STATE.lock().set(Some(ChunkManager::create()));
     PATHFINDER_STATE.lock().set(Some(Pathfinder::create(&CHUNK_STATE)));
+    AI_STATE.lock().set(Some(AI::create(None)));
 }
 
 /**
@@ -152,12 +169,34 @@ pub extern "C" fn chunk_set(x: i64, y: i64, z: i64, value: i8) {
     CHUNK_STATE.lock().get_mut().as_mut().expect("Not initialized!").set(x as isize, y as isize, z as isize, value);
 }
 
+fn get_string(raw: *const c_char) -> String {
+    unsafe {
+        String::from(std::str::from_utf8(CStr::from_ptr(raw).to_bytes()).expect("Could not create string!"))
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn ai_cycle(goal: *const c_char, feedback: *const c_char) -> *const c_char {
+    let mut lock = AI_STATE.lock();
+    let ai = lock.get_mut().as_mut().expect("Not initialized!");
+    ai.goal = Some(get_string(goal));
+    ai.feedback = Some(get_string(feedback));
+    let (s, c) = ai.cycle();
+    let final_str = s + "(!###!)" + &*c;
+    let final_c_str = CString::new(final_str).expect("Could not convert string to C-style!");
+    final_c_str.into_raw()
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::ai::ai::AI;
-    // TODO: create advanced testing environment simulator
+    use crate::chunk::chunk::{FULL, SHIFT};
     use super::*;
-    use chatgpt::prelude::*;
+
+    #[cfg(test)]
+    #[ctor::ctor]
+    fn init() {
+        configure_logging(None);
+    }
 
     #[test]
     fn chunking_works() {
@@ -186,12 +225,23 @@ mod tests {
         assert_eq!(cm.get(17, 0, 0).unwrap(), 1);
     }
 
-    #[tokio::test]
-    async fn ai_works() -> Result<()> {
-        let mut ai = AI::create();
-        ai.create_conversation();
-        ai.cycle().await?;
-        println!("Done!");
-        Ok(())
+    #[test]
+    fn ai_works() {
+        let mut ai = AI::create(Some(String::from("Beat the ender dragon")));
+        ai.test_loop();
+        info!("Done!");
+    }
+
+    #[test]
+    fn scripting_works() {
+        let manager = ScriptManager::create();
+        let result = manager.execute(r#"
+        local x, y, z = find_block('minecraft:oak_log')
+        pathfind(x, y, z)
+        destroy_vein(x, y, z)
+        pickup_nearby_items()
+        "#);
+
+        info!("{:?}", result);
     }
 }

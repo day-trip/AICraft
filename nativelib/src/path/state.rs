@@ -1,8 +1,9 @@
 use std::cmp::{Ordering, PartialEq};
 use std::cmp::PartialOrd;
 use std::hash::{Hash, Hasher};
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[repr(C)]
 pub struct State {
     pub x: i64,

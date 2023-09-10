@@ -11,25 +11,30 @@ use crate::debug::debug::TRACE_PATH_BLOCK;
 use crate::util::hashmap::FxHasher;
 use crate::path::block_type::BlockType;
 
-#[repr(C)]
+const DEFAULT_COST: f64 = 1.0;
+const EMPTY_COST: f64 = 0.0;
+const MAX_STEPS: i64 = 80000;
+
 pub struct Pathfinder<'a> {
     // Critical data
     pub path: Vec<State>,
+
     pub debug: Vec<State>,
-    default_cost: f64,
-    empty_cost: f64,
-    start: State,
-    goal: State,
+
+    pub start: State,
+    pub goal: State,
     last: State,
-    max_steps: i64,
+
     k_m: f64,
     open_hash: HashMap<State, f64, BuildHasherDefault<FxHasher>>,
     cell_hash: HashMap<State, CellInfo, BuildHasherDefault<FxHasher>>,
     open_list: BinaryHeap<State>,
 
     // Caches
-    ground_cache: HashMap<(i64, i64), i64, BuildHasherDefault<FxHasher>>,
+    ground_cache: HashMap<(i64, i64, i64), i64, BuildHasherDefault<FxHasher>>,
+
     sqrt2: f64,
+
     sqrt3: f64,
 
     // World info
@@ -41,12 +46,9 @@ impl<'a> Pathfinder<'a> {
         Self {
             path: vec![],
             debug: vec![],
-            default_cost: 1.0,
-            empty_cost: 0.0,
             start: State::blank(),
             goal: State::blank(),
             last: State::blank(),
-            max_steps: 80000,
             k_m: 0.0,
             open_hash: HashMap::default(),
             cell_hash: HashMap::default(),
@@ -69,7 +71,7 @@ impl<'a> Pathfinder<'a> {
 
         self.k_m = 0.0;
 
-        self.cell_hash.insert(self.goal, CellInfo::new(self.default_cost));
+        self.cell_hash.insert(self.goal, CellInfo::new(DEFAULT_COST));
 
         self.make_new_cell(self.start);
         self.start = self.calculate_key(self.start);
@@ -83,7 +85,7 @@ impl<'a> Pathfinder<'a> {
         match self.cell_hash.get(&s) {
             None => {
                 let h = self.heuristic(s, self.goal);
-                self.cell_hash.insert(s, CellInfo::create(h, h, self.empty_cost));
+                self.cell_hash.insert(s, CellInfo::create(h, h, EMPTY_COST));
                 h
             }
             Some(c) => { c.rhs }
@@ -99,7 +101,7 @@ impl<'a> Pathfinder<'a> {
         match self.cell_hash.get(&s) {
             None => {
                 let h = self.heuristic(s, self.goal);
-                self.cell_hash.insert(s, CellInfo::create(h, h, self.empty_cost));
+                self.cell_hash.insert(s, CellInfo::create(h, h, EMPTY_COST));
                 h
             }
             Some(c) => { c.g }
@@ -121,7 +123,7 @@ impl<'a> Pathfinder<'a> {
     }
 
     fn heuristic(&mut self, a: State, b: State) -> f64 {
-        self.eight_condist(a, b, 1.0, 1.0) * self.default_cost
+        self.eight_condist(a, b, 1.0, 1.0) * DEFAULT_COST
     }
 
     fn eight_condist(&self, state1: State, state2: State, up_cost: f64, down_cost: f64) -> f64 {
@@ -155,24 +157,19 @@ impl<'a> Pathfinder<'a> {
         debug!("Transforming: {}", s.to_string());
         let os = s.clone();
 
-        /*
-        Went from (-30, -251, 63) to 63 (cached).
-        Transforming: (-30, -251, 64)
-        Went from (-30, -251, 64) to 63 (cached).
-        Transforming: (-30, -250, 62)
-        Went from (-30, -250, 62) to 62 (cached).
-        Transforming: (-30, -250, 64)
-        Went from (-30, -250, 64) to 63 (cached).
-         */
-
-        match self.ground_cache.get(&(s.x, s.y)) {
+        match self.ground_cache.get(&(s.x, s.y, s.z)) {
             None => {
-                while self.get_block(s.below()) != BlockType::SOLID {
-                    s.i_below();
+                if self.get_block(s) != BlockType::SOLID {
+                    let mut below = self.get_block(s.below());
+
+                    while below != BlockType::SOLID && below != BlockType::WATER {
+                        s.i_below();
+                        below = self.get_block(s.below());
+                    }
                 }
 
                 trace!("Went from {} to {}.", os.to_string(), s.to_string());
-                self.ground_cache.insert((os.x, os.y), s.z);
+                self.ground_cache.insert((os.x, os.y, os.z), s.z);
 
                 s
             }
@@ -186,7 +183,7 @@ impl<'a> Pathfinder<'a> {
     fn occupied(&mut self, s: State, g: Option<State>, u: bool) -> bool {
         let v = self.cell_hash.get(&s);
 
-        if v.is_some() && v.unwrap().cost != self.empty_cost {
+        if v.is_some() && v.unwrap().cost != EMPTY_COST {
             return v.unwrap().cost < 0.0;
         }
 
@@ -195,21 +192,21 @@ impl<'a> Pathfinder<'a> {
 
         let o = if at == BlockType::SOLID || above == BlockType::SOLID {
             if TRACE_PATH_BLOCK {
-                trace!("too solid!");
+                trace!("Too solid!");
             }
             -1.0
         } else if s.z - g.unwrap_or(self.ground_level(s)).z > 5 {
             if TRACE_PATH_BLOCK {
-                trace!("too high!");
+                trace!("Too high!");
             }
             -1.0
         } else {
-            self.default_cost
+            DEFAULT_COST
         };
 
 
         if u {
-            self.update_cell(s, o, !self.close(o, self.default_cost));
+            self.update_cell(s, o, !self.close(o, DEFAULT_COST));
         }
 
         o < 0.0
@@ -237,7 +234,7 @@ impl<'a> Pathfinder<'a> {
         let scale = if (a.x - b.x).abs() + (a.y - b.y).abs() + (a.z - b.z).abs() > 1 { self.sqrt2 } else { 1.0 };
 
         match self.cell_hash.get(&a) {
-            None => { scale * self.default_cost }
+            None => { scale * DEFAULT_COST }
             Some(i) => { scale * i.cost }
         }
     }
@@ -391,7 +388,7 @@ impl<'a> Pathfinder<'a> {
     fn make_new_cell(&mut self, s: State) {
         if self.cell_hash.contains_key(&s) { return; }
         let h = self.heuristic(s, self.goal);
-        self.cell_hash.insert(s, CellInfo::create(h, h, self.default_cost));
+        self.cell_hash.insert(s, CellInfo::create(h, h, DEFAULT_COST));
     }
 
     pub fn update_cell(&mut self, s: State, cost: f64, a: bool) {
@@ -415,7 +412,7 @@ impl<'a> Pathfinder<'a> {
 
         for key in self.cell_hash.keys() {
             let value = self.cell_hash.get(key).unwrap();
-            if !self.close(value.cost, self.default_cost) {
+            if !self.close(value.cost, DEFAULT_COST) {
                 to_add.push((*key, value.cost));
             }
         }
@@ -428,7 +425,7 @@ impl<'a> Pathfinder<'a> {
 
         self.goal = s;
 
-        self.cell_hash.insert(self.goal, CellInfo::create(0.0, 0.0, self.default_cost));
+        self.cell_hash.insert(self.goal, CellInfo::create(0.0, 0.0, DEFAULT_COST));
 
         self.make_new_cell(self.start);
         self.start = self.calculate_key(self.start);
@@ -459,7 +456,7 @@ impl<'a> Pathfinder<'a> {
         while !self.open_list.is_empty() && (*self.open_list.peek().unwrap() < key) || self.get_rhs(self.start) != self.get_g(self.start) {
             k += 1;
 
-            if k > self.max_steps {
+            if k > MAX_STEPS {
                 warn!("At maximum steps!");
                 return -1;
             }

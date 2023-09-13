@@ -176,10 +176,10 @@ impl ChunkManager {
 
     fn _debug(&self, _x: isize, _y: isize, _z: isize) {
         if TRACE_CHUNK_DEBUG {
-            let elements: Vec<String> = self.0.keys().map(|k| k.clone().0.to_string() + " " + &*k.1.to_string()).collect();
-            trace!("WOW: {}", elements.join(","));
-            trace!("Cool: {}, {} from {}, {}", ChunkManager::proc_c(_x), ChunkManager::proc_c(_y), _x as f64 / WIDTH as f64, _y as f64 / WIDTH as f64);
-            trace!("Oh yeah, and: {}, {}, {}", ChunkManager::proc_p(_x), ChunkManager::proc_p(_y), _z);
+            // let elements: Vec<String> = self.0.keys().map(|k| k.clone().0.to_string() + " " + &*k.1.to_string()).collect();
+            // trace!("All chunks: {}", elements.join(","));
+            trace!("Outer coords: {}, {} from {}, {}", ChunkManager::proc_c(_x), ChunkManager::proc_c(_y), _x as f64 / WIDTH as f64, _y as f64 / WIDTH as f64);
+            trace!("Inner coords: {}, {}, {}", ChunkManager::proc_p(_x), ChunkManager::proc_p(_y), _z);
         }
     }
 

@@ -1,0 +1,12 @@
+body {
+    font-family: "Inter", "sans-serif";
+    background-color: rgb(249, 250, 251);
+}
+
+button, input {
+    font-family: "Inter", "sans-serif";
+}
+
+.font-code {
+    font-family: "JetBrains Mono", "sans-serif";
+}

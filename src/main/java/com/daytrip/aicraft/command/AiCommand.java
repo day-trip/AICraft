@@ -1,2 +1,12 @@
-package com.daytrip.aicraft.command;public @interface AiCommand {
+package com.daytrip.aicraft.command;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface AiCommand {
+    String name();
 }

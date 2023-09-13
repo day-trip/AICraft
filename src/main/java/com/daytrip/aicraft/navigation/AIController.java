@@ -10,4 +10,6 @@ public abstract class AIController {
     }
 
     abstract void tick();
+
+    abstract boolean isActive();
 }

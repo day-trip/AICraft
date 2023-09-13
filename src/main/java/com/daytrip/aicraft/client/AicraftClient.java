@@ -1,13 +1,16 @@
 package com.daytrip.aicraft.client;
 
-import com.daytrip.aicraft.command.AICraftCommandHandler;
+import com.daytrip.aicraft.command.AiCommandManager;
+import com.daytrip.aicraft.command.AiCraftCommands;
 import com.daytrip.aicraft.event.BlockUpdateCallback;
 import com.daytrip.aicraft.event.SendChatCallback;
 import com.daytrip.aicraft.mixin.IMixinBlockBehaviour;
 import com.daytrip.aicraft.natives.Chunk;
+import com.daytrip.aicraft.util.TimerManager;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
@@ -28,12 +31,22 @@ public class AicraftClient implements ClientModInitializer {
     public void onInitializeClient() {
         System.out.println("AICraft Client initializing...");
 
+        AiCommandManager.registerClass(AiCraftCommands.class);
+
         SendChatCallback.EVENT.register(message -> {
-            if (message.startsWith("!")) {
-                AICraftCommandHandler.handle(message);
+            if (message.stripLeading().startsWith("!")) {
+                try {
+                    AiCommandManager.execute(message.stripLeading());
+                } catch (IllegalArgumentException e) {
+                    AiCraftCommands.chatLog(e.getMessage());
+                }
                 return true;
             }
             return false;
+        });
+
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            TimerManager.tick();
         });
 
         ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
@@ -78,6 +91,12 @@ public class AicraftClient implements ClientModInitializer {
     }
 
     private static byte blockType(BlockState state) {
-        return (byte) (((IMixinBlockBehaviour) state.getBlock()).hasCollision() ? -1 : state.isAir() ? 0 : state.getBlock() == Blocks.WATER ? 1 : 2);
+        if (state.getBlock() == Blocks.WATER) {
+            return 1;
+        }
+        if (/*!((IMixinBlockBehaviour) state.getBlock()).hasCollision()*/ !state.isSolid()) {
+            return 0;
+        }
+        return -1;
     }
 }

@@ -147,9 +147,8 @@ impl<'a> Pathfinder<'a> {
     }
 
     fn get_block(&self, s: State) -> BlockType {
-        debug!("Getting block at: {}", s.to_string());
         let state = self.chunk_manager.lock().get_mut().as_mut().expect("Not initialized!").get(s.x as isize, s.y as isize, s.z as isize).expect(&*format!("Chunk doesn't exist! {}, {}, {}", s.x, s.y, s.z));
-        // trace!("({})", state);
+        debug!("Getting block at: {} ({})", s.to_string(), state);
         BlockType::from_i8(state).expect("Invalid block!") // !path -47 71 -237
     }
 

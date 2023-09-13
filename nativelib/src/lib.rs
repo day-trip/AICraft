@@ -5,6 +5,7 @@ mod ai;
 mod debug;
 mod state;
 mod save;
+mod logging;
 
 #[macro_use]
 extern crate num_derive;
@@ -36,6 +37,7 @@ use log4rs::Config;
 use parking_lot::Mutex;
 use crate::chunk::chunk::{HEIGHT, WIDTH};
 pub use crate::state::world::World;
+pub use crate::logging::log::{init_ui};
 
 pub static PATHFINDER_STATE: Mutex<Cell<Option<Pathfinder>>> = Mutex::new(Cell::new(None));
 pub static CHUNK_STATE: Mutex<Cell<Option<ChunkManager>>> = Mutex::new(Cell::new(None));

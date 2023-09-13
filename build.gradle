@@ -18,6 +18,9 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     implementation 'com.github.jnr:jnr-ffi:2.2.14'
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+    implementation group: 'org.apache.commons', name: 'commons-numbers-core', version: '1.1'
+    implementation group: 'org.apache.commons', name: 'commons-numbers-quaternion', version: '1.1'
 }
 
 processResources {
@@ -56,6 +59,11 @@ java {
 jar {
     from("LICENSE") {
         rename { "${it}_${project.archivesBaseName}"}
+    }
+    from('nativelib/target/release') {
+        include '*.dll'
+        include '*.dylib'
+        include '*.so'
     }
 }
 

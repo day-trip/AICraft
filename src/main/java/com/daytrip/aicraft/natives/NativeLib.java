@@ -3,6 +3,8 @@ package com.daytrip.aicraft.natives;
 public interface NativeLib {
     void init();
 
+    void dealloc();
+
     void pf_init(State start, State goal);
 
     void pf_update_cell(State cell, float cost);
@@ -26,4 +28,6 @@ public interface NativeLib {
     void chunk_remove(int x, int y);
 
     void chunk_set(int x, int y, int z, byte value);
+
+    String ai_cycle(String goal, String feedback);
 }

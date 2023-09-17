@@ -12,13 +12,17 @@
   "dependencies": {
     "@fontsource/inter": "^5.0.8",
     "@fontsource/jetbrains-mono": "^5.0.12",
-    "@heroicons/react": "^2.0.18",
+    "@headlessui/react": "^1.7.17",
     "@tauri-apps/api": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.16.0",
     "react-tooltip": "^5.21.3"
   },
   "devDependencies": {
+    "@iconify/icons-fluent": "^1.2.34",
+    "@iconify/icons-mi": "^1.2.3",
+    "@iconify/react": "^4.1.1",
     "@tauri-apps/cli": "^1.4.0",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",

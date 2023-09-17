@@ -16,6 +16,28 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "startDragging": true
+      },
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "readDir": true,
+        "exists": true,
+        "scope": ["$APPDATA/**", "$HOME/**"]
+      },
+      "clipboard": {
+        "all": false,
+        "writeText": true
       }
     },
     "bundle": {
@@ -35,7 +57,8 @@
         "resizable": true,
         "title": "SmartLog",
         "width": 1200,
-        "height": 700
+        "height": 700,
+        "decorations": false
       }
     ]
   }

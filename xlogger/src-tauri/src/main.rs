@@ -1,25 +1,23 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::fs;
-use std::path::PathBuf;
+use std::{fs};
 use native_dialog::FileDialog;
-use tauri::Manager;
-use uds_windows::UnixStream;
 
 #[tauri::command]
-fn loaddata() -> Option<String> {
+fn getpath() -> Option<String> {
     match FileDialog::new().show_open_single_dir().expect("Could not pick folder!") {
         None => { None }
         Some(p) => {
             let path = String::from(p.to_str().expect("Could not create file string!"));
-            let data = fs::read_to_string(path + "\\nativelog\\nativelog.pid").expect("Unable to read data!");
-            Some(data)
+            Some(path)
         }
     }
 }
 
-fn emit_event() {
-
+#[tauri::command]
+fn refreshdata(path: String) -> Option<String> {
+    let data = fs::read_to_string(path + "\\nativelog\\nativelog.json").expect("Unable to read data!");
+    Some(data)
 }
 
 fn main() {
@@ -32,7 +30,7 @@ fn main() {
             });*/
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![loaddata])
+        .invoke_handler(tauri::generate_handler![getpath, refreshdata])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri application.");
 }
